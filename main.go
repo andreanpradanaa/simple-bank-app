@@ -1,31 +1,34 @@
 package main
 
 import (
-	"errors"
-	"fmt"
+	"database/sql"
+	"log"
+
+	"github.com/andreanpradanaa/simple-bank-app/api"
+	db "github.com/andreanpradanaa/simple-bank-app/db/sqlc"
+	"github.com/andreanpradanaa/simple-bank-app/utils"
+	_ "github.com/lib/pq"
 )
 
-// type Test struct {
-// 	*Car
-// }
-
 func main() {
+	config, err := utils.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config:", err)
+	}
 
-	text := ""
-	var err error
-	defer func() {
-		if err != nil {
-			fmt.Println(err, text)
-		}
-		fmt.Println(err, text)
-	}()
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	if err != nil {
+		log.Fatal("cannot connect to db:", err)
+	}
 
-	x := 5
-	if x > 3 {
-		text = "valid"
-		// err = errors.New("")
-	} else {
-		text = "tidak valid"
-		err = errors.New("tidak valid")
+	store := db.NewStore(conn)
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create server:", err)
+	}
+
+	err = server.Start(config.HTTPServerAddress)
+	if err != nil {
+		log.Fatal("cannot start server:", err)
 	}
 }

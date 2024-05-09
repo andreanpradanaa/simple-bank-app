@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/andreanpradanaa/simple-bank-app/util"
+	"github.com/andreanpradanaa/simple-bank-app/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +12,7 @@ func createRandomTransfer(t *testing.T, account1, account2 Account) Transfer {
 	arg := CreateTransferParams{
 		FromAccountID: account1.ID,
 		ToAccountID:   account2.ID,
-		Amount:        util.RandomMoney(),
+		Amount:        utils.RandomMoney(),
 	}
 
 	transfer, err := testQueries.CreateTransfer(context.Background(), arg)
