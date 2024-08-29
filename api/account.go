@@ -1,7 +1,6 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +8,7 @@ import (
 	db "github.com/andreanpradanaa/simple-bank-app/db/sqlc"
 	"github.com/andreanpradanaa/simple-bank-app/token"
 	"github.com/gin-gonic/gin"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 )
 
 type CreateAccountRequest struct {
@@ -32,12 +31,10 @@ func (server *Server) createAccount(ctx *gin.Context) {
 
 	if err != nil {
 		fmt.Println(err)
-		if pqErr, ok := err.(*pq.Error); ok {
-			switch pqErr.Code.Name() {
-			case "foreign_key_violation", "unique_violation":
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
-				return
-			}
+		errCode := db.ErrorCode(err)
+		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -59,7 +56,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 
 	response, err := server.store.GetAccount(ctx, request.Id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
@@ -96,7 +93,7 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		Offset: int32(request.PageId-1) * int32(request.PageSize),
 	})
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}
